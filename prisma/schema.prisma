@@ -1,0 +1,267 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Blogs {
+  id         Int       @id @default(autoincrement())
+  title      String    @db.VarChar(255)
+  content    String    @db.Text
+  author_id  Int
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @default(now()) @db.Timestamp(0)
+  Users      Users     @relation(fields: [author_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "Blogs_ibfk_1")
+
+  @@index([author_id], map: "author_id")
+}
+
+model Brands {
+  id          Int        @id @default(autoincrement())
+  name        String     @db.VarChar(255)
+  image_url   String?    @db.VarChar(255)
+  description String?    @db.Text
+  created_at  DateTime?  @default(now()) @db.DateTime(0)
+  updated_at  DateTime?  @default(now()) @db.DateTime(0)
+  Products    Products[]
+}
+
+model CarouselImages {
+  id          Int       @id @default(autoincrement())
+  image_url   String    @db.VarChar(255)
+  title       String?   @db.VarChar(255)
+  description String?   @db.Text
+  is_active   Boolean?  @default(true)
+  created_at  DateTime? @default(now()) @db.DateTime(0)
+  updated_at  DateTime? @default(now()) @db.DateTime(0)
+}
+
+model Cart {
+  id         Int         @id @default(autoincrement())
+  user_id    Int
+  created_at DateTime?   @default(now()) @db.Timestamp(0)
+  Users      Users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "Cart_ibfk_1")
+  CartItems  CartItems[]
+
+  @@index([user_id], map: "user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model CartItems {
+  id            Int           @id @default(autoincrement())
+  cart_id       Int
+  product_id    Int
+  color_id      Int
+  quantity      Int
+  Cart          Cart          @relation(fields: [cart_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "CartItems_ibfk_1")
+  ProductColors ProductColors @relation(fields: [color_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "CartItems_ibfk_2")
+  Products      Products      @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "CartItems_ibfk_3")
+
+  @@index([color_id], map: "color_id")
+  @@index([cart_id], map: "idx_cart_id")
+  @@index([cart_id, product_id], map: "idx_cart_product")
+  @@index([product_id], map: "idx_product_id")
+}
+
+model Categories {
+  id          Int        @id @default(autoincrement())
+  name        String     @db.VarChar(255)
+  description String?    @db.Text
+  image_url   String?    @db.VarChar(255)
+  created_at  DateTime?  @default(now()) @db.DateTime(0)
+  updated_at  DateTime?  @default(now()) @db.DateTime(0)
+  Products    Products[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Coupons {
+  id         Int        @id @default(autoincrement())
+  discount   Int
+  valid_from DateTime   @db.DateTime(0)
+  valid_to   DateTime   @db.DateTime(0)
+  created_at DateTime?  @default(now()) @db.DateTime(0)
+  updated_at DateTime?  @default(now()) @db.DateTime(0)
+  Products   Products[]
+}
+
+model Genders {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique(map: "name") @db.VarChar(50)
+  Users Users[]
+}
+
+model LoginVerificationCodes {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  code       String    @db.VarChar(6)
+  expiration DateTime  @db.DateTime(0)
+  used       Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.DateTime(0)
+  updated_at DateTime? @default(now()) @db.DateTime(0)
+  Users      Users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "LoginVerificationCodes_ibfk_1")
+
+  @@index([code], map: "code")
+  @@index([user_id], map: "user_id")
+}
+
+model OrderItems {
+  id            Int           @id @default(autoincrement())
+  order_id      Int
+  product_id    Int
+  color_id      Int
+  quantity      Int?          @default(0)
+  unit_price    Decimal       @db.Decimal(10, 2)
+  Orders        Orders        @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "OrderItems_ibfk_1")
+  ProductColors ProductColors @relation(fields: [color_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "OrderItems_ibfk_2")
+  Products      Products      @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "OrderItems_ibfk_3")
+
+  @@index([color_id], map: "color_id")
+  @@index([order_id], map: "order_id")
+  @@index([product_id], map: "product_id")
+}
+
+model OrderStatus {
+  id          Int       @id @default(autoincrement())
+  status_name String    @unique(map: "status_name") @db.VarChar(50)
+  description String?   @db.Text
+  created_at  DateTime? @default(now()) @db.DateTime(0)
+  updated_at  DateTime? @default(now()) @db.DateTime(0)
+  Orders      Orders[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Orders {
+  id          Int          @id @default(autoincrement())
+  user_id     Int
+  status_id   Int
+  total_price Decimal      @db.Decimal(10, 2)
+  is_deleted  Boolean?     @default(false)
+  created_at  DateTime?    @default(now()) @db.Timestamp(0)
+  updated_at  DateTime?    @default(now()) @db.Timestamp(0)
+  OrderItems  OrderItems[]
+  Users       Users        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Orders_ibfk_1")
+  OrderStatus OrderStatus  @relation(fields: [status_id], references: [id], onUpdate: NoAction, map: "Orders_ibfk_2")
+
+  @@index([status_id], map: "status_id")
+  @@index([user_id], map: "user_id")
+}
+
+model PasswordResetCodes {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  code       String    @db.VarChar(6)
+  expiration DateTime  @db.DateTime(0)
+  used       Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.DateTime(0)
+  updated_at DateTime? @default(now()) @db.DateTime(0)
+  Users      Users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "PasswordResetCodes_ibfk_1")
+
+  @@index([code], map: "code")
+  @@index([user_id], map: "user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ProductColors {
+  id         Int          @id @default(autoincrement())
+  product_id Int
+  color      String       @db.VarChar(50)
+  quantity   Int?         @default(0)
+  created_at DateTime?    @default(now()) @db.DateTime(0)
+  updated_at DateTime?    @default(now()) @db.DateTime(0)
+  CartItems  CartItems[]
+  OrderItems OrderItems[]
+  Products   Products     @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ProductColors_ibfk_1")
+
+  @@index([product_id], map: "product_id")
+}
+
+model ProductImages {
+  id         Int       @id @default(autoincrement())
+  product_id Int
+  image_url  String    @db.VarChar(255)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  Products   Products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ProductImages_ibfk_1")
+
+  @@index([product_id], map: "product_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Products {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar(255)
+  description   String?         @db.Text
+  price         Decimal         @db.Decimal(10, 2)
+  category_id   Int?
+  brand_id      Int?
+  coupon_id     Int?
+  is_active     Boolean?        @default(true)
+  is_deleted    Boolean?        @default(false)
+  views         Int?            @default(0)
+  sales_count   Int?            @default(0)
+  created_at    DateTime?       @default(now()) @db.DateTime(0)
+  updated_at    DateTime?       @default(now()) @db.DateTime(0)
+  CartItems     CartItems[]
+  OrderItems    OrderItems[]
+  ProductColors ProductColors[]
+  ProductImages ProductImages[]
+  Categories    Categories?     @relation(fields: [category_id], references: [id], onUpdate: NoAction, map: "Products_ibfk_1")
+  Brands        Brands?         @relation(fields: [brand_id], references: [id], onUpdate: NoAction, map: "Products_ibfk_2")
+  Coupons       Coupons?        @relation(fields: [coupon_id], references: [id], onUpdate: NoAction, map: "Products_ibfk_3")
+  Reviews       Reviews[]
+
+  @@index([brand_id], map: "brand_id")
+  @@index([category_id], map: "category_id")
+  @@index([coupon_id], map: "coupon_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Reviews {
+  id         Int       @id @default(autoincrement())
+  product_id Int
+  user_id    Int
+  rating     Int
+  comment    String?   @db.Text
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  Products   Products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "Reviews_ibfk_1")
+  Users      Users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "Reviews_ibfk_2")
+
+  @@index([product_id], map: "product_id")
+  @@index([user_id], map: "user_id")
+}
+
+model Roles {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique(map: "name") @db.VarChar(50)
+  Users Users[]
+}
+
+model Users {
+  id                     Int                      @id @default(autoincrement())
+  name                   String                   @db.VarChar(255)
+  email                  String                   @unique(map: "email") @db.VarChar(255)
+  password               String                   @db.VarChar(255)
+  avatar                 String?                  @db.VarChar(255)
+  phone                  String?                  @db.VarChar(15)
+  address                String?                  @db.Text
+  birthday               DateTime?                @db.Date
+  gender_id              Int?
+  role_id                Int?
+  is_deleted             Boolean?                 @default(false)
+  created_at             DateTime?                @default(now()) @db.DateTime(0)
+  updated_at             DateTime?                @default(now()) @db.DateTime(0)
+  Blogs                  Blogs[]
+  Cart                   Cart[]
+  LoginVerificationCodes LoginVerificationCodes[]
+  Orders                 Orders[]
+  PasswordResetCodes     PasswordResetCodes[]
+  Reviews                Reviews[]
+  Genders                Genders?                 @relation(fields: [gender_id], references: [id], onUpdate: NoAction, map: "Users_ibfk_1")
+  Roles                  Roles?                   @relation(fields: [role_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "Users_ibfk_2")
+
+  @@index([email], map: "email_2")
+  @@index([gender_id], map: "gender_id")
+  @@index([role_id], map: "role_id")
+}
