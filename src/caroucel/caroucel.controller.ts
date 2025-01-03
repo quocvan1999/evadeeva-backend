@@ -1,34 +1,55 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Res,
+  HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  Body,
+} from '@nestjs/common';
 import { CaroucelService } from './caroucel.service';
+import { Response } from 'express';
+import { ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateCaroucelDto } from './dto/create-caroucel.dto';
-import { UpdateCaroucelDto } from './dto/update-caroucel.dto';
+import { ResponseType } from 'src/types/response.type';
 
 @Controller('caroucel')
 export class CaroucelController {
   constructor(private readonly caroucelService: CaroucelService) {}
 
   @Post()
-  create(@Body() createCaroucelDto: CreateCaroucelDto) {
-    return this.caroucelService.create(createCaroucelDto);
-  }
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    type: CreateCaroucelDto,
+    required: true,
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  async createCaroucel(
+    @Body() body: CreateCaroucelDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response,
+  ): Promise<Response> {
+    try {
+      const upload: ResponseType<null> =
+        await this.caroucelService.createCaroucel(body, file);
 
-  @Get()
-  findAll() {
-    return this.caroucelService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.caroucelService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCaroucelDto: UpdateCaroucelDto) {
-    return this.caroucelService.update(+id, updateCaroucelDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.caroucelService.remove(+id);
+      return res.status(upload.statusCode).json({
+        statusCode: upload.statusCode,
+        content: {
+          message: 'Thêm caroucel thành công',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        content: {
+          message: 'Internal Server Error',
+          error: error?.message || 'Internal Server Error',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 }

@@ -1,26 +1,53 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { ResponseType } from 'src/types/response.type';
+import { GoogleDriveService } from 'src/google-drive/google-drive.service';
 import { CreateCaroucelDto } from './dto/create-caroucel.dto';
-import { UpdateCaroucelDto } from './dto/update-caroucel.dto';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class CaroucelService {
-  create(createCaroucelDto: CreateCaroucelDto) {
-    return 'This action adds a new caroucel';
-  }
+  prisma = new PrismaClient();
 
-  findAll() {
-    return `This action returns all caroucel`;
-  }
+  constructor(private readonly googleDriveService: GoogleDriveService) {}
 
-  findOne(id: number) {
-    return `This action returns a #${id} caroucel`;
-  }
+  async createCaroucel(
+    body: CreateCaroucelDto,
+    file: Express.Multer.File,
+  ): Promise<ResponseType<null>> {
+    try {
+      if (!file) {
+        throw new Error('Không thể lấy tập tin');
+      }
 
-  update(id: number, updateCaroucelDto: UpdateCaroucelDto) {
-    return `This action updates a #${id} caroucel`;
-  }
+      const upload = await this.googleDriveService.uploadFile(
+        file,
+        'Caroucel',
+        ['image/jpeg', 'image/jpg', 'image/webp'],
+        5 * 1024 * 1024,
+      );
 
-  remove(id: number) {
-    return `This action removes a #${id} caroucel`;
+      if (!upload) {
+        throw new Error('Không thể tải tập tin lên');
+      }
+
+      const createCaroucell = await this.prisma.carouselImages.create({
+        data: {
+          image_url: `${upload}`,
+          title: body.title === '' ? file.originalname : body.title,
+          description: body.description === '' ? '' : body.description,
+          is_active: `${body.is_active}` === 'true' ? true : false,
+        },
+      });
+
+      if (!createCaroucell) {
+        throw new Error('Thêm caroucel không thành công');
+      }
+
+      return {
+        statusCode: HttpStatus.CREATED,
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
   }
 }
