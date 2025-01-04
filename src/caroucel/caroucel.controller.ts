@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { CaroucelService } from './caroucel.service';
 import { Response } from 'express';
-import { ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiHeader } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateCaroucelDto } from './dto/create-caroucel.dto';
 import { ResponseType } from 'src/types/response.type';
@@ -19,6 +19,7 @@ export class CaroucelController {
   constructor(private readonly caroucelService: CaroucelService) {}
 
   @Post()
+  @ApiHeader({ name: 'token', required: true })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     type: CreateCaroucelDto,
