@@ -228,6 +228,43 @@ CREATE TABLE PasswordResetCodes (
     INDEX (code)
 );
 
+-- Data
+INSERT INTO Genders (name) VALUES 
+('Male'),
+('Female'),
+('Other');
+
+INSERT INTO Roles (name) VALUES 
+('Admin'),
+('User');
+
+INSERT INTO Users (name, 
+    email, 
+    password, 
+    avatar, 
+    phone, 
+    address, 
+    birthday, 
+    gender_id, 
+    role_id, 
+    is_deleted, 
+    created_at, 
+    updated_at)
+VALUES (
+    'Admin', 
+    'quocvan289@gmail.com', 
+    '$2b$10$c.sIN0we89Ar1R2OfEVsHODUXBQfsDxR2tO7fZdewU.XlGAup97aO',
+    NULL, 
+    NULL, 
+    NULL, 
+    NULL, 
+    (SELECT id FROM Genders WHERE name = 'Male'), -- Thay đổi nếu cần
+    (SELECT id FROM Roles WHERE name = 'Admin'), 
+    FALSE, 
+    CURRENT_TIMESTAMP, 
+    CURRENT_TIMESTAMP 
+);
+
 
 
 
