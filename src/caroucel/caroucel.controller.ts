@@ -15,6 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateCaroucelDto } from './dto/create-caroucel.dto';
 import { ResponseType } from 'src/types/response.type';
 import { AuthGuard } from 'src/guard/auth.guard';
+import { Roles } from 'src/decorator/role.decorator';
 
 @Controller('caroucel')
 export class CaroucelController {
@@ -23,6 +24,7 @@ export class CaroucelController {
   @Post()
   @ApiHeader({ name: 'token', required: true })
   @UseGuards(AuthGuard)
+  @Roles('Admin')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     type: CreateCaroucelDto,
