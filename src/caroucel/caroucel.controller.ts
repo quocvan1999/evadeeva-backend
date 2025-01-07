@@ -9,6 +9,7 @@ import {
   UseGuards,
   Get,
   Query,
+  Delete,
 } from '@nestjs/common';
 import { CaroucelService } from './caroucel.service';
 import { Response } from 'express';
@@ -125,6 +126,50 @@ export class CaroucelController {
             statusCode: upload.statusCode,
             content: {
               error: upload.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        default:
+          break;
+      }
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        content: {
+          message: 'Internal Server Error',
+          error: error?.message || 'Internal Server Error',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  @Delete(':id')
+  @ApiHeader({ name: 'token', required: true })
+  @UseGuards(AuthGuard)
+  @Roles('Admin')
+  async deleteCaroucel(
+    @Query('id') id: number,
+    @Res() res: Response,
+  ): Promise<Response> {
+    try {
+      const removeCaroucel: ResponseType<null> =
+        await this.caroucelService.deleteCaroucel(Number(id));
+
+      switch (removeCaroucel.type) {
+        case 'res':
+          return res.status(removeCaroucel.statusCode).json({
+            statusCode: removeCaroucel.statusCode,
+            content: {
+              message: removeCaroucel.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        case 'err':
+          return res.status(removeCaroucel.statusCode).json({
+            statusCode: removeCaroucel.statusCode,
+            content: {
+              error: removeCaroucel.message,
             },
             timestamp: new Date().toISOString(),
           });

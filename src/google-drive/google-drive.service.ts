@@ -165,7 +165,6 @@ export class GoogleDriveService {
 
       // Xóa file
       await this.drive.files.delete({ fileId: fileId });
-      console.log(`Tệp có ID "${fileId}" đã được xóa thành công.`);
     } catch (error) {
       console.error('Lỗi xóa tập tin:', error.message);
       throw error;

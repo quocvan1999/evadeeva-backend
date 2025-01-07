@@ -121,4 +121,48 @@ export class CaroucelService {
       throw new Error(error.message);
     }
   }
+
+  async deleteCaroucel(id: number): Promise<ResponseType<null>> {
+    try {
+      const checkcaroucel = await this.prisma.carouselImages.findUnique({
+        where: {
+          id,
+        },
+      });
+
+      if (!checkcaroucel) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Caroucel không tồn tại.',
+          type: 'err',
+        };
+      }
+
+      const googleDriveUrl = checkcaroucel.image_url;
+
+      const romoveCaroucel = await this.prisma.carouselImages.delete({
+        where: {
+          id,
+        },
+      });
+
+      if (!romoveCaroucel) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Xoá caroucel không thành công.',
+          type: 'err',
+        };
+      }
+
+      await this.googleDriveService.deleteFileByUrl(googleDriveUrl);
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Xoá caroucel thành công.',
+        type: 'res',
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
 }
