@@ -3,6 +3,8 @@ import { ResponseType } from 'src/types/response.type';
 import { GoogleDriveService } from 'src/google-drive/google-drive.service';
 import { CreateCaroucelDto } from './dto/create-caroucel.dto';
 import { PrismaClient } from '@prisma/client';
+import { CarouselImageDto } from './dto/caroucel-image.dto';
+import { ListType } from 'src/types/list.type';
 
 @Injectable()
 export class CaroucelService {
@@ -16,7 +18,11 @@ export class CaroucelService {
   ): Promise<ResponseType<null>> {
     try {
       if (!file) {
-        throw new Error('Không thể lấy tập tin');
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Không thể lấy tập tin',
+          type: 'err',
+        };
       }
 
       const upload = await this.googleDriveService.uploadFile(
@@ -27,7 +33,11 @@ export class CaroucelService {
       );
 
       if (!upload) {
-        throw new Error('Không thể tải tập tin lên');
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Không thể tải tập tin lên',
+          type: 'err',
+        };
       }
 
       const createCaroucell = await this.prisma.carouselImages.create({
@@ -40,13 +50,72 @@ export class CaroucelService {
       });
 
       if (!createCaroucell) {
-        throw new Error('Thêm caroucel không thành công');
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Thêm caroucel không thành công',
+          type: 'err',
+        };
       }
 
       return {
-        statusCode: 201,
-        message: 'CREATE',
+        statusCode: HttpStatus.CREATED,
+        message: 'Thêm caroucel thành công',
         type: 'res',
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async getAllCaroucel(
+    isActive: 'All' | 'True' | 'False' = 'All',
+    page: number,
+    limit: number,
+    keyword: string,
+  ): Promise<ResponseType<ListType<CarouselImageDto[]>>> {
+    try {
+      const active =
+        isActive === 'True' ? true : isActive === 'False' ? false : undefined;
+
+      const caroucels = await this.prisma.carouselImages.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        where: {
+          is_active: active,
+          title: {
+            contains: keyword,
+          },
+        },
+      });
+
+      if (!caroucels) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Lấy danh sách caroucel không thành công',
+          type: 'err',
+        };
+      }
+
+      const count = await this.prisma.carouselImages.count({
+        where: {
+          is_active: active,
+          title: {
+            contains: keyword,
+          },
+        },
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Lấy danh sách caroucel thành công',
+        type: 'res',
+        data: {
+          data: caroucels,
+          page: page,
+          limit: limit,
+          count: count,
+          keyword: keyword,
+        },
       };
     } catch (error) {
       throw new Error(error.message);
