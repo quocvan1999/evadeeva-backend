@@ -5,6 +5,7 @@ import { CreateCaroucelDto } from './dto/create-caroucel.dto';
 import { PrismaClient } from '@prisma/client';
 import { CarouselImageDto } from './dto/caroucel-image.dto';
 import { ListType } from 'src/types/list.type';
+import { UpdateCaroucelDto } from './dto/update-caroucel.dto';
 
 @Injectable()
 export class CaroucelService {
@@ -159,6 +160,82 @@ export class CaroucelService {
       return {
         statusCode: HttpStatus.OK,
         message: 'Xoá caroucel thành công.',
+        type: 'res',
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async updateCaroucel(
+    body: UpdateCaroucelDto,
+    file: Express.Multer.File,
+    id: number,
+  ): Promise<ResponseType<null>> {
+    try {
+      const checkcaroucel = await this.prisma.carouselImages.findUnique({
+        where: {
+          id,
+        },
+      });
+
+      if (!checkcaroucel) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Caroucel không tồn tại.',
+          type: 'err',
+        };
+      }
+
+      let img_url = checkcaroucel.image_url;
+
+      if (file) {
+        await this.googleDriveService.deleteFileByUrl(checkcaroucel.image_url);
+
+        const upload = await this.googleDriveService.uploadFile(
+          file,
+          'Caroucel',
+          ['image/jpeg', 'image/jpg', 'image/webp'],
+          5 * 1024 * 1024,
+        );
+
+        if (!upload) {
+          return {
+            statusCode: HttpStatus.NOT_FOUND,
+            message: 'Không thể tải tập tin lên',
+            type: 'err',
+          };
+        }
+
+        img_url = upload;
+      }
+
+      const updateCaroucell = await this.prisma.carouselImages.update({
+        where: {
+          id,
+        },
+        data: {
+          image_url: `${img_url}`,
+          title: body.title === '' ? checkcaroucel.title : body.title,
+          description:
+            body.description === ''
+              ? checkcaroucel.description
+              : body.description,
+          is_active: `${body.is_active}` === 'true' ? true : false,
+        },
+      });
+
+      if (!updateCaroucell) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Cập nhật caroucel không thành công',
+          type: 'err',
+        };
+      }
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Cập nhật caroucel thành công',
         type: 'res',
       };
     } catch (error) {

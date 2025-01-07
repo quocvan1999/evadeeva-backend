@@ -10,6 +10,7 @@ import {
   Get,
   Query,
   Delete,
+  Put,
 } from '@nestjs/common';
 import { CaroucelService } from './caroucel.service';
 import { Response } from 'express';
@@ -21,6 +22,7 @@ import { AuthGuard } from 'src/guard/auth.guard';
 import { Roles } from 'src/decorator/role.decorator';
 import { CarouselImageDto } from './dto/caroucel-image.dto';
 import { ListType } from 'src/types/list.type';
+import { UpdateCaroucelDto } from './dto/update-caroucel.dto';
 
 @Controller('caroucel')
 export class CaroucelController {
@@ -170,6 +172,58 @@ export class CaroucelController {
             statusCode: removeCaroucel.statusCode,
             content: {
               error: removeCaroucel.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        default:
+          break;
+      }
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        content: {
+          message: 'Internal Server Error',
+          error: error?.message || 'Internal Server Error',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  @Put(':id')
+  @ApiHeader({ name: 'token', required: true })
+  @UseGuards(AuthGuard)
+  @Roles('Admin')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('newFile'))
+  @ApiBody({
+    type: UpdateCaroucelDto,
+    required: true,
+  })
+  async updateCaroucel(
+    @Body() body: UpdateCaroucelDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Query('id') id: number,
+    @Res() res: Response,
+  ): Promise<Response> {
+    try {
+      const update: ResponseType<null> =
+        await this.caroucelService.updateCaroucel(body, file, Number(id));
+
+      switch (update.type) {
+        case 'res':
+          return res.status(update.statusCode).json({
+            statusCode: update.statusCode,
+            content: {
+              message: update.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        case 'err':
+          return res.status(update.statusCode).json({
+            statusCode: update.statusCode,
+            content: {
+              error: update.message,
             },
             timestamp: new Date().toISOString(),
           });
