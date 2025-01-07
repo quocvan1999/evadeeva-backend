@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { CaroucelModule } from './caroucel/caroucel.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -8,6 +9,7 @@ import { CaroucelModule } from './caroucel/caroucel.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    AuthModule,
     CaroucelModule,
   ],
   controllers: [],
