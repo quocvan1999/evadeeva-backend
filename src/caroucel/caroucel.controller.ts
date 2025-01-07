@@ -25,57 +25,6 @@ import { ListType } from 'src/types/list.type';
 export class CaroucelController {
   constructor(private readonly caroucelService: CaroucelService) {}
 
-  @Post()
-  @ApiHeader({ name: 'token', required: true })
-  @UseGuards(AuthGuard)
-  @Roles('Admin')
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiBody({
-    type: CreateCaroucelDto,
-    required: true,
-  })
-  async createCaroucel(
-    @Body() body: CreateCaroucelDto,
-    @UploadedFile() file: Express.Multer.File,
-    @Res() res: Response,
-  ): Promise<Response> {
-    try {
-      const upload: ResponseType<null> =
-        await this.caroucelService.createCaroucel(body, file);
-
-      switch (upload.type) {
-        case 'res':
-          return res.status(upload.statusCode).json({
-            statusCode: upload.statusCode,
-            content: {
-              message: upload.message,
-            },
-            timestamp: new Date().toISOString(),
-          });
-        case 'err':
-          return res.status(upload.statusCode).json({
-            statusCode: upload.statusCode,
-            content: {
-              error: upload.message,
-            },
-            timestamp: new Date().toISOString(),
-          });
-        default:
-          break;
-      }
-    } catch (error) {
-      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        content: {
-          message: 'Internal Server Error',
-          error: error?.message || 'Internal Server Error',
-        },
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
-
   @Get()
   @ApiQuery({
     name: 'is_active',
@@ -125,6 +74,57 @@ export class CaroucelController {
             statusCode: caroucels.statusCode,
             content: {
               error: caroucels.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        default:
+          break;
+      }
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        content: {
+          message: 'Internal Server Error',
+          error: error?.message || 'Internal Server Error',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  @Post()
+  @ApiHeader({ name: 'token', required: true })
+  @UseGuards(AuthGuard)
+  @Roles('Admin')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBody({
+    type: CreateCaroucelDto,
+    required: true,
+  })
+  async createCaroucel(
+    @Body() body: CreateCaroucelDto,
+    @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response,
+  ): Promise<Response> {
+    try {
+      const upload: ResponseType<null> =
+        await this.caroucelService.createCaroucel(body, file);
+
+      switch (upload.type) {
+        case 'res':
+          return res.status(upload.statusCode).json({
+            statusCode: upload.statusCode,
+            content: {
+              message: upload.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        case 'err':
+          return res.status(upload.statusCode).json({
+            statusCode: upload.statusCode,
+            content: {
+              error: upload.message,
             },
             timestamp: new Date().toISOString(),
           });
