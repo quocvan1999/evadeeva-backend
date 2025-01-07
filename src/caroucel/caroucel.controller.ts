@@ -6,6 +6,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import { CaroucelService } from './caroucel.service';
 import { Response } from 'express';
@@ -13,6 +14,7 @@ import { ApiBody, ApiConsumes, ApiHeader } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateCaroucelDto } from './dto/create-caroucel.dto';
 import { ResponseType } from 'src/types/response.type';
+import { AuthGuard } from 'src/guard/auth.guard';
 
 @Controller('caroucel')
 export class CaroucelController {
@@ -20,6 +22,7 @@ export class CaroucelController {
 
   @Post()
   @ApiHeader({ name: 'token', required: true })
+  @UseGuards(AuthGuard)
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     type: CreateCaroucelDto,
