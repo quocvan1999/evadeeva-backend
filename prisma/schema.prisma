@@ -40,30 +40,12 @@ model CarouselImages {
 }
 
 model Cart {
-  id         Int         @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   user_id    Int
-  created_at DateTime?   @default(now()) @db.Timestamp(0)
-  Users      Users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "Cart_ibfk_1")
-  CartItems  CartItems[]
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  Users      Users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "Cart_ibfk_1")
 
   @@index([user_id], map: "user_id")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model CartItems {
-  id            Int           @id @default(autoincrement())
-  cart_id       Int
-  product_id    Int
-  color_id      Int
-  quantity      Int
-  Cart          Cart          @relation(fields: [cart_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "CartItems_ibfk_1")
-  ProductColors ProductColors @relation(fields: [color_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "CartItems_ibfk_2")
-  Products      Products      @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "CartItems_ibfk_3")
-
-  @@index([color_id], map: "color_id")
-  @@index([cart_id], map: "idx_cart_id")
-  @@index([cart_id, product_id], map: "idx_cart_product")
-  @@index([product_id], map: "idx_product_id")
 }
 
 model Categories {
@@ -91,20 +73,6 @@ model Genders {
   id    Int     @id @default(autoincrement())
   name  String  @unique(map: "name") @db.VarChar(50)
   Users Users[]
-}
-
-model LoginVerificationCodes {
-  id         Int       @id @default(autoincrement())
-  user_id    Int
-  code       String    @db.VarChar(6)
-  expiration DateTime  @db.DateTime(0)
-  used       Boolean?  @default(false)
-  created_at DateTime? @default(now()) @db.DateTime(0)
-  updated_at DateTime? @default(now()) @db.DateTime(0)
-  Users      Users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "LoginVerificationCodes_ibfk_1")
-
-  @@index([code], map: "code")
-  @@index([user_id], map: "user_id")
 }
 
 model OrderItems {
@@ -171,7 +139,6 @@ model ProductColors {
   quantity   Int?         @default(0)
   created_at DateTime?    @default(now()) @db.DateTime(0)
   updated_at DateTime?    @default(now()) @db.DateTime(0)
-  CartItems  CartItems[]
   OrderItems OrderItems[]
   Products   Products     @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ProductColors_ibfk_1")
 
@@ -203,7 +170,6 @@ model Products {
   sales_count   Int?            @default(0)
   created_at    DateTime?       @default(now()) @db.DateTime(0)
   updated_at    DateTime?       @default(now()) @db.DateTime(0)
-  CartItems     CartItems[]
   OrderItems    OrderItems[]
   ProductColors ProductColors[]
   ProductImages ProductImages[]
@@ -239,27 +205,26 @@ model Roles {
 }
 
 model Users {
-  id                     Int                      @id @default(autoincrement())
-  name                   String                   @db.VarChar(255)
-  email                  String                   @unique(map: "email") @db.VarChar(255)
-  password               String                   @db.VarChar(255)
-  avatar                 String?                  @db.VarChar(255)
-  phone                  String?                  @db.VarChar(15)
-  address                String?                  @db.Text
-  birthday               DateTime?                @db.Date
-  gender_id              Int?
-  role_id                Int?
-  is_deleted             Boolean?                 @default(false)
-  created_at             DateTime?                @default(now()) @db.DateTime(0)
-  updated_at             DateTime?                @default(now()) @db.DateTime(0)
-  Blogs                  Blogs[]
-  Cart                   Cart[]
-  LoginVerificationCodes LoginVerificationCodes[]
-  Orders                 Orders[]
-  PasswordResetCodes     PasswordResetCodes[]
-  Reviews                Reviews[]
-  Genders                Genders?                 @relation(fields: [gender_id], references: [id], onUpdate: NoAction, map: "Users_ibfk_1")
-  Roles                  Roles?                   @relation(fields: [role_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "Users_ibfk_2")
+  id                 Int                  @id @default(autoincrement())
+  name               String               @db.VarChar(255)
+  email              String               @unique(map: "email") @db.VarChar(255)
+  password           String               @db.VarChar(255)
+  avatar             String?              @db.VarChar(255)
+  phone              String?              @db.VarChar(15)
+  address            String?              @db.Text
+  birthday           DateTime?            @db.Date
+  gender_id          Int?
+  role_id            Int?
+  is_deleted         Boolean?             @default(false)
+  created_at         DateTime?            @default(now()) @db.DateTime(0)
+  updated_at         DateTime?            @default(now()) @db.DateTime(0)
+  Blogs              Blogs[]
+  Cart               Cart[]
+  Orders             Orders[]
+  PasswordResetCodes PasswordResetCodes[]
+  Reviews            Reviews[]
+  Genders            Genders?             @relation(fields: [gender_id], references: [id], onUpdate: NoAction, map: "Users_ibfk_1")
+  Roles              Roles?               @relation(fields: [role_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "Users_ibfk_2")
 
   @@index([email], map: "email_2")
   @@index([gender_id], map: "gender_id")
