@@ -93,4 +93,75 @@ export class AuthService {
       throw new Error(error.message);
     }
   }
+
+  async refreshToken(token: string): Promise<ResponseType<{ token: string }>> {
+    try {
+      if (!token) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Không tìm thấy token.',
+          type: 'err',
+        };
+      }
+
+      const checkToken = this.customJwtService.verifyToken(token);
+
+      if (!checkToken) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Token không hợp lệ.',
+          type: 'err',
+        };
+      }
+
+      const { id } = checkToken;
+
+      const checkUser = await this.prisma.users.findUnique({
+        where: {
+          id,
+        },
+      });
+
+      if (!checkUser) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Người dùng không tồn tại.',
+          type: 'err',
+        };
+      }
+
+      const checkRole = await this.prisma.roles.findUnique({
+        where: {
+          id: checkUser.role_id,
+        },
+      });
+
+      if (!checkRole) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Role không chính xác.',
+          type: 'err',
+        };
+      }
+
+      const payload = {
+        id: checkUser.id,
+        role: checkRole.name,
+      };
+
+      const newAccessToken = this.customJwtService.generateToken(
+        payload,
+        this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRES_IN'),
+      );
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Tạo mới accessToken thành công.',
+        type: 'res',
+        data: { token: newAccessToken },
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
 }
