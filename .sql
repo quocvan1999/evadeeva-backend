@@ -205,15 +205,15 @@ CREATE TABLE Blogs (
 -- 18. RESET PASSWORD CODE
 CREATE TABLE PasswordResetCodes (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    code VARCHAR(6) NOT NULL,
+    user_id INT NOT NULL UNIQUE, -- Đảm bảo mỗi user chỉ có một mã reset password
+    code VARCHAR(255) NOT NULL,
     expiration DATETIME NOT NULL,
-    used BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
     INDEX (code)
 );
+
 
 -- Data
 INSERT INTO Genders (name) VALUES 

@@ -1,17 +1,9 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpStatus,
-  Res,
-  Query,
-  Req,
-} from '@nestjs/common';
+import { Controller, Post, Body, HttpStatus, Res, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { Request, Response } from 'express';
 import { ResponseType } from 'src/types/response.type';
-import { ApiQuery } from '@nestjs/swagger';
+import { ForgotSendMailAuthDto } from './dto/forgot-send-mail.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -94,6 +86,47 @@ export class AuthController {
             statusCode: refreshToken.statusCode,
             content: {
               error: refreshToken.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        default:
+          break;
+      }
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        content: {
+          error: error?.message || 'Internal Server Error',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(
+    @Body() body: ForgotSendMailAuthDto,
+    @Res() res: Response,
+  ): Promise<Response> {
+    try {
+      const forgotSendMail: ResponseType<{ code: number }> =
+        await this.authService.forgotSendMail(body);
+
+      switch (forgotSendMail.type) {
+        case 'res':
+          return res.status(forgotSendMail.statusCode).json({
+            statusCode: forgotSendMail.statusCode,
+            content: {
+              message: forgotSendMail.message,
+              code: forgotSendMail.data.code,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        case 'err':
+          return res.status(forgotSendMail.statusCode).json({
+            statusCode: forgotSendMail.statusCode,
+            content: {
+              error: forgotSendMail.message,
             },
             timestamp: new Date().toISOString(),
           });

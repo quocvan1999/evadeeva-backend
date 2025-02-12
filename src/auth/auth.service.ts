@@ -6,6 +6,9 @@ import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { CustomJwtService } from 'src/jwt/jwt.service';
 import { Response } from 'express';
+import { ForgotSendMailAuthDto } from './dto/forgot-send-mail.dto';
+import { generateCode, getFutureTime } from 'src/utils/utils';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +17,7 @@ export class AuthService {
   constructor(
     private readonly configService: ConfigService,
     private readonly customJwtService: CustomJwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   async login(
@@ -159,6 +163,82 @@ export class AuthService {
         message: 'Tạo mới accessToken thành công.',
         type: 'res',
         data: { token: newAccessToken },
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async forgotSendMail(
+    body: ForgotSendMailAuthDto,
+  ): Promise<ResponseType<{ code: number }>> {
+    try {
+      const { email } = body;
+
+      const checkUser = await this.prisma.users.findUnique({
+        where: {
+          email,
+        },
+      });
+
+      if (!checkUser) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Người dùng không tồn tại.',
+          type: 'err',
+        };
+      }
+
+      const checkRole = await this.prisma.roles.findUnique({
+        where: {
+          id: checkUser.role_id,
+        },
+      });
+
+      if (!checkRole) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Role không chính xác.',
+          type: 'err',
+        };
+      }
+
+      const code: number = generateCode();
+
+      const saveCode = await this.prisma.passwordResetCodes.upsert({
+        where: {
+          user_id: checkUser.id,
+        },
+        create: {
+          user_id: checkUser.id,
+          code: bcrypt.hashSync(code.toString(), 10),
+          expiration: getFutureTime(2),
+        },
+        update: {
+          code: bcrypt.hashSync(code.toString(), 10),
+          expiration: getFutureTime(2),
+        },
+      });
+
+      if (!saveCode) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Thêm code không thành công.',
+          type: 'err',
+        };
+      }
+
+      this.emailService.sendMail(
+        checkUser.email,
+        'Mã xác thực',
+        code.toString(),
+      );
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Lấy mã xác thực thành công.',
+        type: 'res',
+        data: { code: code },
       };
     } catch (error) {
       throw new Error(error.message);
