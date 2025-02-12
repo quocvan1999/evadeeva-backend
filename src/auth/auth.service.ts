@@ -9,6 +9,7 @@ import { Response } from 'express';
 import { ForgotSendMailAuthDto } from './dto/forgot-send-mail.dto';
 import { generateCode, getFutureTime } from 'src/utils/utils';
 import { EmailService } from 'src/email/email.service';
+import { CheckAccountAuthDto } from './dto/check-account.dot';
 
 @Injectable()
 export class AuthService {
@@ -239,6 +240,56 @@ export class AuthService {
         message: 'Lấy mã xác thực thành công.',
         type: 'res',
         data: { code: code },
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async checkAcc(body: CheckAccountAuthDto): Promise<ResponseType<null>> {
+    try {
+      const { email } = body;
+
+      const checkUser = await this.prisma.users.findUnique({
+        where: {
+          email,
+        },
+      });
+
+      if (!checkUser) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Người dùng không tồn tại.',
+          type: 'err',
+        };
+      }
+
+      const checkRole = await this.prisma.roles.findUnique({
+        where: {
+          id: checkUser.role_id,
+        },
+      });
+
+      if (!checkRole) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Role không chính xác.',
+          type: 'err',
+        };
+      }
+
+      if (checkRole.name !== 'Admin') {
+        return {
+          statusCode: HttpStatus.UNAUTHORIZED,
+          message: 'Tài khoản không có quyền truy cập.',
+          type: 'err',
+        };
+      }
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Tài khoản có quyền truy cập.',
+        type: 'res',
       };
     } catch (error) {
       throw new Error(error.message);

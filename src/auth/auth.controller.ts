@@ -4,6 +4,7 @@ import { LoginAuthDto } from './dto/login-auth.dto';
 import { Request, Response } from 'express';
 import { ResponseType } from 'src/types/response.type';
 import { ForgotSendMailAuthDto } from './dto/forgot-send-mail.dto';
+import { CheckAccountAuthDto } from './dto/check-account.dot';
 
 @Controller('auth')
 export class AuthController {
@@ -127,6 +128,46 @@ export class AuthController {
             statusCode: forgotSendMail.statusCode,
             content: {
               error: forgotSendMail.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        default:
+          break;
+      }
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        content: {
+          error: error?.message || 'Internal Server Error',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  @Post('check-account')
+  async checkAccount(
+    @Body() body: CheckAccountAuthDto,
+    @Res() res: Response,
+  ): Promise<Response> {
+    try {
+      const checkAcc: ResponseType<null> =
+        await this.authService.checkAcc(body);
+
+      switch (checkAcc.type) {
+        case 'res':
+          return res.status(checkAcc.statusCode).json({
+            statusCode: checkAcc.statusCode,
+            content: {
+              message: checkAcc.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        case 'err':
+          return res.status(checkAcc.statusCode).json({
+            statusCode: checkAcc.statusCode,
+            content: {
+              error: checkAcc.message,
             },
             timestamp: new Date().toISOString(),
           });
