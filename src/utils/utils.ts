@@ -9,3 +9,9 @@ export const getFutureTime = (minutes: number): Date => {
   now.setMinutes(now.getMinutes() + minutes);
   return now;
 };
+
+export const isDateValid = (dateString: Date): boolean => {
+  const inputDate = new Date(dateString);
+  const today = new Date();
+  return inputDate >= today;
+};

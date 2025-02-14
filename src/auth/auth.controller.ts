@@ -5,6 +5,7 @@ import { Request, Response } from 'express';
 import { ResponseType } from 'src/types/response.type';
 import { ForgotSendMailAuthDto } from './dto/forgot-send-mail.dto';
 import { CheckAccountAuthDto } from './dto/check-account.dot';
+import { CheckOtpAuthDto } from './dto/checkOtp.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -168,6 +169,46 @@ export class AuthController {
             statusCode: checkAcc.statusCode,
             content: {
               error: checkAcc.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        default:
+          break;
+      }
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        content: {
+          error: error?.message || 'Internal Server Error',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  @Post('check-otp-forgot')
+  async checkOtpForgot(
+    @Body() body: CheckOtpAuthDto,
+    @Res() res: Response,
+  ): Promise<Response> {
+    try {
+      const checkOtp: ResponseType<null> =
+        await this.authService.checkOtp(body);
+
+      switch (checkOtp.type) {
+        case 'res':
+          return res.status(checkOtp.statusCode).json({
+            statusCode: checkOtp.statusCode,
+            content: {
+              message: checkOtp.message,
+            },
+            timestamp: new Date().toISOString(),
+          });
+        case 'err':
+          return res.status(checkOtp.statusCode).json({
+            statusCode: checkOtp.statusCode,
+            content: {
+              error: checkOtp.message,
             },
             timestamp: new Date().toISOString(),
           });

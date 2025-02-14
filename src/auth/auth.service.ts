@@ -7,9 +7,10 @@ import { ConfigService } from '@nestjs/config';
 import { CustomJwtService } from 'src/jwt/jwt.service';
 import { Response } from 'express';
 import { ForgotSendMailAuthDto } from './dto/forgot-send-mail.dto';
-import { generateCode, getFutureTime } from 'src/utils/utils';
+import { generateCode, getFutureTime, isDateValid } from 'src/utils/utils';
 import { EmailService } from 'src/email/email.service';
 import { CheckAccountAuthDto } from './dto/check-account.dot';
+import { CheckOtpAuthDto } from './dto/checkOtp.dto';
 
 @Injectable()
 export class AuthService {
@@ -213,18 +214,18 @@ export class AuthService {
         create: {
           user_id: checkUser.id,
           code: bcrypt.hashSync(code.toString(), 10),
-          expiration: getFutureTime(2),
+          expiration: getFutureTime(1),
         },
         update: {
           code: bcrypt.hashSync(code.toString(), 10),
-          expiration: getFutureTime(2),
+          expiration: getFutureTime(1),
         },
       });
 
       if (!saveCode) {
         return {
           statusCode: HttpStatus.NOT_FOUND,
-          message: 'Thêm code không thành công.',
+          message: 'Thêm mã xác thực không thành công.',
           type: 'err',
         };
       }
@@ -237,7 +238,7 @@ export class AuthService {
 
       return {
         statusCode: HttpStatus.OK,
-        message: 'Lấy mã xác thực thành công.',
+        message: 'Lấy mã xác thực thành công, kiểm tra email để nhận mã.',
         type: 'res',
         data: { code: code },
       };
@@ -289,6 +290,82 @@ export class AuthService {
       return {
         statusCode: HttpStatus.OK,
         message: 'Tài khoản có quyền truy cập.',
+        type: 'res',
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async checkOtp(body: CheckOtpAuthDto): Promise<ResponseType<null>> {
+    try {
+      const { email, otp } = body;
+
+      const checkUser = await this.prisma.users.findUnique({
+        where: {
+          email,
+        },
+      });
+
+      if (!checkUser) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Người dùng không tồn tại.',
+          type: 'err',
+        };
+      }
+
+      const checkRole = await this.prisma.roles.findUnique({
+        where: {
+          id: checkUser.role_id,
+        },
+      });
+
+      if (!checkRole) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Role không chính xác.',
+          type: 'err',
+        };
+      }
+
+      const checkCode = await this.prisma.passwordResetCodes.findUnique({
+        where: {
+          user_id: checkUser.id,
+        },
+      });
+
+      if (!checkCode) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'OTP không tồn tại.',
+          type: 'err',
+        };
+      }
+
+      const checkExpirationCode = isDateValid(checkCode.expiration);
+
+      if (!checkExpirationCode) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'OTP đã hết hạn.',
+          type: 'err',
+        };
+      }
+
+      const checkOtp = await bcrypt.compareSync(otp, checkCode.code);
+
+      if (!checkOtp) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'OTP không chính xác.',
+          type: 'err',
+        };
+      }
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Xác thực OTP thành công',
         type: 'res',
       };
     } catch (error) {
