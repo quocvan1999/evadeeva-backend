@@ -11,6 +11,7 @@ import { generateCode, getFutureTime, isDateValid } from 'src/utils/utils';
 import { EmailService } from 'src/email/email.service';
 import { CheckAccountAuthDto } from './dto/check-account.dot';
 import { CheckOtpAuthDto } from './dto/checkOtp.dto';
+import { ForgotPasswordAuthDto } from './dto/forgot-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -366,6 +367,69 @@ export class AuthService {
       return {
         statusCode: HttpStatus.OK,
         message: 'Xác thực OTP thành công',
+        type: 'res',
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async fotgotPassword(
+    body: ForgotPasswordAuthDto,
+  ): Promise<ResponseType<null>> {
+    try {
+      const { email, password } = body;
+
+      const checkUser = await this.prisma.users.findUnique({
+        where: {
+          email,
+        },
+      });
+
+      if (!checkUser) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Người dùng không tồn tại.',
+          type: 'err',
+        };
+      }
+
+      const checkRole = await this.prisma.roles.findUnique({
+        where: {
+          id: checkUser.role_id,
+        },
+      });
+
+      if (!checkRole) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Role không chính xác.',
+          type: 'err',
+        };
+      }
+
+      const newPassword = await bcrypt.hashSync(password, 10);
+
+      const update = await this.prisma.users.update({
+        where: {
+          id: checkUser.id,
+        },
+        data: {
+          password: newPassword,
+        },
+      });
+
+      if (!update) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Cập nhật mật khẩu không thành công.',
+          type: 'err',
+        };
+      }
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Cập nhật mật khẩu thành công.',
         type: 'res',
       };
     } catch (error) {
